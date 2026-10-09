@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: rentnest
+  config:
+    # 读取仓库根目录 .env（本地开发）；也兼容在 backend/ 目录下运行
+    import: optional:file:../.env,optional:file:.env
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:rentnest}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3s
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_SIZE_MB:20}MB
+      max-request-size: 60MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: assign_id
+
+
+rentnest:
+  jwt:
+    # 开发默认值；生产必须通过环境变量覆盖
+    secret: ${JWT_SECRET:rentnest-dev-secret-change-me-32bytes!!}
+    # access token 有效期（小时），过期后由 refresh token 静默续签
+    access-expire-hours: 2
+    # refresh token 有效期（天），每次续签滑动重置
+    refresh-expire-days: 30
+  file:
+    max-size-mb: ${FILE_MAX_SIZE_MB:20}
+    minio:
+      endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+      access-key: ${MINIO_ACCESS_KEY:minioadmin}
+      secret-key: ${MINIO_SECRET_KEY:minioadmin}
+      bucket: ${MINIO_BUCKET:rentnest}
+  chat:
+    port: ${CHAT_WS_PORT:9090}
+    ticket-ttl-seconds: ${CHAT_TICKET_TTL_SECONDS:60}

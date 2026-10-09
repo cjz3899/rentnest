@@ -1,0 +1,40 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+*.env.local
+*.local
+
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# local file storage / MinIO data
+data/
+
+# IDE
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+
+# logs
+*.log
+logs/
+
+# test / coverage
+coverage/
