@@ -4,29 +4,34 @@
 
 > 实施进度见下方「开发状态」章节。README 随实施推进持续更新。
 
-## 架构
+## 项目结构
 
-模块化单体，本地开发不使用 Docker，直接连接本机服务：
+模块化单体
 
 ```
-┌─────────────────────────── 浏览器 ───────────────────────────┐
-│  Vue 3 + TS + Vite + Pinia + Element Plus（单应用）          │
-│  ├─ 用户端  /           房源/服务/社区/聊天/个人中心          │
-│  └─ 管理端  /admin/**   房源/预约/用户/订单/内容/审计管理     │
-└──────────┬──────────────────────────┬───────────────────────┘
-           │ HTTP (REST, JWT)         │ WebSocket (ws://host:9090)
-┌──────────▼──────────────────────────▼───────────────────────┐
-│  Spring Boot 3.5 单体 (Java 21, 端口 8080)                   │
-│  auth / user / rental / pservice / tenant / community        │
-│  chat(HTTP) + netty(WS) / file / admin / ai(agent+rag+mcp)   │
-└──────┬──────────────────────────────┬───────────────────────┘
-       │                              │
-  ┌────▼─────┐                  ┌─────▼──────┐
-  │ MySQL    │                  │ Redis 8.x  │
-  │ 业务事实  │                  │ 缓存/限流/  │
-  │ 数据 +   │                  │ 票据/在线态 │
-  │ 知识库    │                  │ +向量检索   │
-  └──────────┘                  └────────────┘
+rentnest/
+├── .env.example
+├── README.md
+├── backend/                    # Spring Boot 单体（内嵌 Netty WS 服务）
+│   ├── pom.xml
+│   └── src/main/java/com/rentnest/
+│       ├── common/             # 统一响应、异常、权限注解、审计
+│       ├── auth/               # JWT 登录、角色
+│       ├── user/               # 用户资料
+│       ├── rental/             # 房源、预约
+│       ├── pservice/           # 公共服务（商品、订单）
+│       ├── tenant/             # 报修、反馈、公告查询
+│       ├── community/          # 帖子、评论、点赞
+│       ├── chat/               # 会话/消息（HTTP 查询）+ netty/（WS）
+│       ├── file/               # FileStorage 接口 + local/minio 实现
+│       ├── ai/                 # agent/（tools+chat）、rag/、mcp/
+│       └── admin/              # 管理端聚合接口、账号/角色/审计
+│   └── src/main/resources/db/migration/   # Flyway V1..Vn
+└── frontend/                   # Vue3 + TS + Vite + Pinia + Element Plus
+    └── src/
+        ├── views/user/         # 用户端页面
+        ├── views/admin/        # 管理端页面（独立 Layout + 路由守卫）
+        ├── api/ stores/ router/ composables/
 ```
 
 - **MySQL**（本机 9.x）：用户、房源、预约、订单、报修、反馈、公告、社区、聊天消息、知识库文档与片段、文件记录 —— 全部业务事实数据，`db/schema.sql` 手动建表。
