@@ -4,10 +4,89 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.rentnest.rental.mapper.HouseMapper">
 
-    <select id="selectPage" resultType="com.rentnest.rental.dto.HouseListItemResp">
-
+    <!-- 房源列表通用查询条件：默认排除已下架，支持按状态/房东/推荐/户型/楼栋/租金/面积/关键词/设施筛选 -->
+    <sql id="queryWhere">
+        <where>
+            <if test="!includeSuspended">
+                AND h.status IN ('RENTABLE', 'RESERVED', 'RENTED')
+            </if>
+            <if test="includeSuspended">
+                <if test="status != null and status != ''">
+                    AND h.status = #{status}
+                </if>
+            </if>
+            <if test="!includeSuspended and status != null and status != ''">
+                AND h.status = #{status}
+            </if>
+            <if test="ownerUserId != null">
+                AND h.owner_user_id = #{ownerUserId}
+            </if>
+            <if test="recommendedOnly">
+                AND h.is_recommended = 1
+            </if>
+            <if test="layout != null and layout != ''">
+                AND h.layout = #{layout}
+            </if>
+            <if test="building != null and building != ''">
+                AND h.building = #{building}
+            </if>
+            <if test="minRent != null">
+                AND h.rent &gt;= #{minRent}
+            </if>
+            <if test="maxRent != null">
+                AND h.rent &lt;= #{maxRent}
+            </if>
+            <if test="minArea != null">
+                AND h.area &gt;= #{minArea}
+            </if>
+            <if test="maxArea != null">
+                AND h.area &lt;= #{maxArea}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (h.title LIKE CONCAT('%', #{keyword}, '%')
+                OR h.description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="facilities != null and facilities.size() > 0">
+                AND EXISTS (
+                SELECT 1 FROM house_facility hf
+                WHERE hf.house_id = h.id
+                AND hf.facility IN
+                <foreach collection="facilities" item="f" open="(" separator="," close=")">
+                    #{f}
+                </foreach>
+                )
+            </if>
+        </where>
+    </sql>
+    <!-- 分页查询房源列表（取第一张图片作为封面），推荐房源优先、按创建时间倒序 -->
+    <select id="selectPage" parameterType="com.rentnest.rental.dto.HouseQuery"
+            resultType="com.rentnest.rental.dto.HouseListItemResp">
+        SELECT h.id,
+        h.title,
+        h.building,
+        h.floor_no,
+        h.orientation,
+        h.layout,
+        h.area,
+        h.rent,
+        h.deposit,
+        h.status,
+        h.is_recommended,
+        h.created_at,
+        (SELECT CONCAT('/api/files/', fr.uuid)
+        FROM house_media hm
+        JOIN file_record fr ON fr.id = hm.file_id
+        WHERE hm.house_id = h.id
+        ORDER BY hm.media_type = 'IMAGE' DESC, hm.sort_order ASC
+        LIMIT 1) AS cover_url
+        FROM house h
+        <include refid="queryWhere"/>
+        ORDER BY h.is_recommended DESC, h.created_at DESC
+        LIMIT #{offset}, #{size}
     </select>
-    <select id="countByQuery" resultType="java.lang.Long">
-
+    <!-- 统计符合条件的房源数量，与 selectPage 共用查询条件 -->
+    <select id="countByQuery" parameterType="com.rentnest.rental.dto.HouseQuery" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM house h
+        <include refid="queryWhere"/>
     </select>
 </mapper>

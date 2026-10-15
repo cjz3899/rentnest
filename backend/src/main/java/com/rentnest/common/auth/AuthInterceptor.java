@@ -30,13 +30,12 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
         String auth = request.getHeader("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) {
-            return reject(response, ErrorCode.UNAUTHORIZED, 401);
-        }
-        CurrentUser user;
-        try {
-            user = jwtUtil.parseAccess(auth.substring(7));
-        } catch (JwtException | IllegalArgumentException e) {
+        CurrentUser user = resolveUser(auth);
+        if (user == null) {
+            // 标注 @AllowAnonymous 的接口（如 PUBLIC 文件下载）放行，权限判断交给业务层
+            if (AnnotatedElementUtils.hasAnnotation(handlerMethod.getMethod(), AllowAnonymous.class)) {
+                return true;
+            }
             return reject(response, ErrorCode.UNAUTHORIZED, 401);
         }
 
@@ -53,6 +52,20 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         UserContextHolder.set(user);
         return true;
+    }
+
+    /**
+     * token 缺失或失效一律返回 null：调用方决定是拒绝还是按匿名处理
+     */
+    private CurrentUser resolveUser(String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            return null;
+        }
+        try {
+            return jwtUtil.parseAccess(auth.substring(7));
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override

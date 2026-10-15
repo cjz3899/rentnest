@@ -168,7 +168,7 @@ public class FileService {
     }
 
     private FileResp toResp(FileRecord record) {
-        return new FileResp(record.getUuid(), record.getOriginalName(), record.getMimeType(),
+        return new FileResp(record.getId(), record.getUuid(), record.getOriginalName(), record.getMimeType(),
                 record.getSizeBytes(), record.getVisibility(), "/api/files/" + record.getUuid());
     }
 

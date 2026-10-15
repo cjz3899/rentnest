@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.rental.mapper.RentalAppointmentMapper">
+    <!-- 看房预约通用查询条件：按租客、房源、状态、房东筛选 -->
+    <sql id="apptWhere">
+        <where>
+            <if test="userId != null">AND a.user_id = #{userId}</if>
+            <if test="houseId != null">AND a.house_id = #{houseId}</if>
+            <if test="status != null and status != ''">AND a.status = #{status}</if>
+            <if test="ownerUserId != null">AND h.owner_user_id = #{ownerUserId}</if>
+        </where>
+    </sql>
+
+    <!-- 分页查询看房预约列表，附带房源标题/楼栋/租金与租客昵称，按创建时间倒序 -->
+    <select id="selectPage" parameterType="com.rentnest.rental.dto.AppointmentQuery"
+            resultType="com.rentnest.rental.dto.AppointmentResp">
+        SELECT a.id, a.house_id, a.user_id, a.contact_name, a.contact_phone,
+        a.expected_move_in_date, a.lease_term, a.remark, a.status,
+        a.handler_id, a.handler_remark, a.handled_at, a.created_at,
+        h.title AS house_title, h.building AS house_building, h.rent AS house_rent,
+        u.nickname AS user_nickname
+        FROM rental_appointment a
+        JOIN house h ON h.id = a.house_id
+        LEFT JOIN users u ON u.id = a.user_id
+        <include refid="apptWhere"/>
+        ORDER BY a.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计符合条件的看房预约数量，与 selectPage 共用查询条件 -->
+    <select id="countByQuery" parameterType="com.rentnest.rental.dto.AppointmentQuery"
+            resultType="long">
+        SELECT COUNT(*)
+        FROM rental_appointment a
+        JOIN house h ON h.id = a.house_id
+        <include refid="apptWhere"/>
+    </select>
+</mapper>

@@ -1,6 +1,7 @@
 package com.rentnest.file.controller;
 
 import com.rentnest.common.api.Result;
+import com.rentnest.common.auth.AllowAnonymous;
 import com.rentnest.file.dto.FileResp;
 import com.rentnest.file.entity.FileRecord;
 import com.rentnest.file.service.FileService;
@@ -31,6 +32,7 @@ public class FileController {
     }
 
     @GetMapping("/{uuid}")
+    @AllowAnonymous
     public ResponseEntity<InputStreamResource> download(@PathVariable String uuid) {
         FileRecord record = fileService.requireReadable(uuid);
         InputStreamResource body = new InputStreamResource(fileService.openStream(record));

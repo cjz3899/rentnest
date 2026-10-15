@@ -4,6 +4,7 @@ import com.rentnest.common.api.ErrorCode;
 import com.rentnest.common.exception.BizException;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
@@ -36,16 +37,13 @@ public class MinioStorage {
     @PostConstruct
     void init() {
         try {
-            boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
-            if (!exists) {
-                throw new IllegalStateException("MinIO bucket 不存在: " + bucket
-                        + "（请先创建，或执行: mc mb <alias>/" + bucket + "）");
+            if (!client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
+                client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+                log.info("MinIO bucket 不存在，已自动创建: {}", bucket);
             }
             log.info("MinioStorage ready, endpoint={}, bucket={}", endpoint, bucket);
-        } catch (IllegalStateException e) {
-            throw e;
         } catch (Exception e) {
-            throw new IllegalStateException("MinIO 连接失败，请检查 .env 中 MINIO_* 配置是否正确且服务已启动", e);
+            throw new IllegalStateException("MinIO 初始化失败（endpoint=" + endpoint + "），请检查 .env 中 MINIO_* 配置是否正确且服务已启动", e);
         }
     }
 

@@ -43,14 +43,12 @@ rentnest/
 
 前置要求：Java 21、Maven 3.9+、Node 20+、本机 MySQL 8+/9+、本机 Redis 8+（需向量检索能力）、本机 MinIO。
 
-MinIO 启动（开发默认账号密码 minioadmin/minioadmin，生产必须改）：
+MinIO 启动（账号密码与 `.env` 中 `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` 一致，生产必须改）：
 
 ```bash
 brew install minio
-MINIO_ROOT_USER=minioadmin MINIO_ROOT_PASSWORD=minioadmin minio server ./data/minio --console-address ":9001"
-# 首次启动后建 bucket（任选其一）：
-#   mc alias set local http://localhost:9000 minioadmin minioadmin && mc mb local/rentnest
-#   或打开 http://localhost:9001 控制台手动创建 bucket "rentnest"
+minio server ./data/minio --console-address ":9001"   # RootUser/RootPass 见 .env 的 MINIO_*
+# bucket 无需手动创建：应用启动时若 rentnest 不存在会自动创建（MinioStorage.init）
 ```
 
 ```bash
@@ -81,6 +79,16 @@ cd frontend && npm install && npm run dev
 | admin | 13800000001 | ADMIN 管理员（全量权限） |
 | landlord | 13800000002 | LANDLORD 房东（房源/预约/租客服务处理） |
 | user | 13800000003 | USER 普通用户 |
+
+## 测试
+
+```bash
+cd backend && mvn test        # 需本机 MySQL / Redis / MinIO 已启动，.env 配置正确
+```
+
+- 测试**真连本机服务，不做 mock**：MySQL 走独立库 `rentnest_test`（`createDatabaseIfNotExist` 自动建库，启动时自动执行 `schema.sql` + `seed.sql`，均幂等），不污染开发库 `rentnest`。
+- 测试数据会累积在 `rentnest_test`（房源、预约、MinIO 对象），需要干净环境时直接 `DROP DATABASE rentnest_test` 重跑。
+- 用例覆盖：登录与 JWT 鉴权、角色越权（USER 访问管理端 403 / 游客 401 / ADMIN 超集放行）、图片上传（magic bytes 校验）、PUBLIC/PRIVATE 文件权限、房源 CRUD 与游客可见性、预约六态状态机与房源状态联动、状态流转留痕与审计日志。
 
 ## AI / MCP 配置
 

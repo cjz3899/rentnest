@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    # 测试专用库，与开发库 rentnest 隔离；库不存在时自动创建
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/rentnest_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+  sql:
+    init:
+      # schema.sql 与 seed.sql 均为幂等脚本，每次测试启动重建表结构并补齐三个测试账号
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/seed.sql

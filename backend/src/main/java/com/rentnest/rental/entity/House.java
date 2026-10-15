@@ -36,6 +36,10 @@ public class House {
      */
     private String orientation;
     /**
+     * 房型，如 一室一厅
+     */
+    private String layout;
+    /**
      * 面积
      */
     private BigDecimal area;
@@ -51,6 +55,10 @@ public class House {
      * 描述
      */
     private String description;
+    /**
+     * 状态
+     */
+    private String status;
     /**
      * 租赁期限
      */

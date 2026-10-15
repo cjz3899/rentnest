@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.rental.mapper.HouseMediaMapper">
+    <!-- 查询某房源的媒体文件列表（关联文件表拼接访问地址），先图片后视频、按排序值升序 -->
+    <select id="selectByHouseId" resultType="com.rentnest.rental.dto.HouseMediaResp">
+        SELECT hm.id,
+               hm.file_id,
+               hm.media_type,
+               hm.sort_order,
+               fr.uuid,
+               CONCAT('/api/files/', fr.uuid) AS url
+        FROM house_media hm
+                 JOIN file_record fr ON fr.id = hm.file_id
+        WHERE hm.house_id = #{houseId}
+        ORDER BY hm.media_type DESC, hm.sort_order ASC
+    </select>
+</mapper>
