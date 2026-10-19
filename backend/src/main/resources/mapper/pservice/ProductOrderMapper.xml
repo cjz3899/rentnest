@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.pservice.mapper.ProductOrderMapper">
+    <sql id="orderWhere">
+        <where>
+            <if test="userId != null">AND o.user_id = #{userId}</if>
+            <if test="productId != null">AND o.product_id = #{productId}</if>
+            <if test="status != null and status != ''">AND o.status = #{status}</if>
+            <if test="from != null">AND o.created_at &gt;= #{from}</if>
+            <if test="to != null">AND o.created_at &lt; #{to}</if>
+        </where>
+    </sql>
+
+    <select id="selectPage" parameterType="com.rentnest.pservice.dto.OrderQuery"
+            resultType="com.rentnest.pservice.dto.OrderResp">
+        SELECT o.id, o.order_no, o.user_id, o.product_id, o.quantity, o.total_amount,
+        o.receiver_name, o.receiver_phone, o.delivery_address, o.remark,
+        o.status, o.created_at,
+        p.name AS product_name, p.spec AS product_spec, p.unit AS product_unit,
+        u.nickname AS user_nickname
+        FROM product_order o
+        JOIN product p ON p.id = o.product_id
+        LEFT JOIN users u ON u.id = o.user_id
+        <include refid="orderWhere"/>
+        ORDER BY o.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+    <select id="countByQuery" parameterType="com.rentnest.pservice.dto.OrderQuery" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM product_order o
+        <include refid="orderWhere"/>
+    </select>
+
+    <!-- 已取消订单不计入统计 -->
+    <select id="statsByProduct" parameterType="com.rentnest.pservice.dto.OrderQuery"
+            resultType="com.rentnest.pservice.dto.OrderStatsResp">
+        SELECT p.id AS product_id, p.name AS product_name,
+        COUNT(o.id) AS order_count,
+        COALESCE(SUM(o.quantity), 0) AS total_quantity,
+        COALESCE(SUM(o.total_amount), 0) AS total_amount
+        FROM product p
+        LEFT JOIN product_order o ON o.product_id = p.id AND o.status &lt;&gt; 'CANCELLED'
+        <if test="from != null">AND o.created_at &gt;= #{from}</if>
+        <if test="to != null">AND o.created_at &lt; #{to}</if>
+        GROUP BY p.id, p.name
+        ORDER BY total_quantity DESC, p.id ASC
+    </select>
+</mapper>

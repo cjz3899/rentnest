@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.pservice.mapper.ProductMapper">
+    <sql id="productWhere">
+        <where>
+            <choose>
+                <when test="includeOffSale">
+                    <if test="status != null and status != ''">
+                        AND p.status = #{status}
+                    </if>
+                </when>
+                <otherwise>
+                    AND p.status = 'ON_SALE'
+                </otherwise>
+            </choose>
+            <if test="keyword != null and keyword != ''">
+                AND (p.name LIKE CONCAT('%', #{keyword}, '%')
+                OR p.description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+    <select id="selectPage" parameterType="com.rentnest.pservice.dto.ProductQuery"
+            resultType="com.rentnest.pservice.dto.ProductListItemResp">
+        SELECT p.id, p.name, p.spec, p.price, p.unit, p.status,
+        CONCAT('/api/files/', fr.uuid) AS cover_url
+        FROM product p
+        LEFT JOIN file_record fr ON fr.id = p.cover_file_id
+        <include refid="productWhere"/>
+        ORDER BY p.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+    <select id="countByQuery" parameterType="com.rentnest.pservice.dto.ProductQuery" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM product p
+        <include refid="productWhere"/>
+    </select>
+    <!-- cover_file_id 为空时 fr.uuid 为 NULL，CONCAT 结果亦为 NULL，即无封面 -->
+    <select id="selectDetailById" resultType="com.rentnest.pservice.dto.ProductDetailResp">
+        SELECT p.id, p.name, p.description, p.spec, p.price, p.unit, p.delivery_note, p.status,
+        CONCAT('/api/files/', fr.uuid) AS cover_url
+        FROM product p
+        LEFT JOIN file_record fr ON fr.id = p.cover_file_id
+        WHERE p.id = #{id}
+    </select>
+</mapper>

@@ -22,6 +22,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/home/**",
                         "/api/houses/page",
                         "/api/houses/{id}",
+                        "/api/product/page",
+                        "/api/product/{id}",
                         "/api/announcements/public/**"
                 );
     }
