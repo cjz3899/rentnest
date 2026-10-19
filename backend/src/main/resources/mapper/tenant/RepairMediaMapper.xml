@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.tenant.mapper.RepairMediaMapper">
+    <select id="selectUrlsByTicketId" resultType="java.lang.String">
+        SELECT CONCAT('/api/files/', fr.uuid)
+        FROM repair_media rm
+        JOIN file_record fr ON fr.id = rm.file_id
+        WHERE rm.ticket_id = #{ticketId}
+        ORDER BY rm.sort_order ASC
+    </select>
+</mapper>

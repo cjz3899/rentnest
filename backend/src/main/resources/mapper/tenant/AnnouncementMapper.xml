@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.tenant.mapper.AnnouncementMapper">
+    <sql id="annWhere">
+        <where>
+            <choose>
+                <when test="includeUnpublished">
+                    <if test="status != null and status != ''">
+                        AND a.status = #{status}
+                    </if>
+                </when>
+                <otherwise>
+                    AND a.status = 'PUBLISHED'
+                </otherwise>
+            </choose>
+            <if test="type != null and type != ''">
+                AND a.type = #{type}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 置顶优先，其后按发布时间倒序 -->
+    <select id="selectPage" parameterType="com.rentnest.tenant.dto.AnnouncementQuery"
+            resultType="com.rentnest.tenant.dto.AnnouncementResp">
+        SELECT a.id, a.title, a.content, a.type, a.status, a.is_pinned,
+        a.publisher_id, a.published_at, a.created_at
+        FROM announcement a
+        <include refid="annWhere"/>
+        ORDER BY a.is_pinned DESC, a.published_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countByQuery" parameterType="com.rentnest.tenant.dto.AnnouncementQuery" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM announcement a
+        <include refid="annWhere"/>
+    </select>
+</mapper>

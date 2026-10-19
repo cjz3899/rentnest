@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.tenant.mapper.FeedbackMediaMapper">
+    <!-- 仅返回页面范围内的反馈图片，避免逐条 N+1 -->
+    <select id="selectUrlsByFeedbackIds" resultType="java.util.HashMap">
+        SELECT fm.feedback_id AS feedbackId, CONCAT('/api/files/', fr.uuid) AS url
+        FROM feedback_media fm
+        JOIN file_record fr ON fr.id = fm.file_id
+        WHERE fm.feedback_id IN
+        <foreach collection="feedbackIds" item="fid" open="(" separator="," close=")">
+            #{fid}
+        </foreach>
+        ORDER BY fm.feedback_id ASC, fm.sort_order ASC
+    </select>
+</mapper>
