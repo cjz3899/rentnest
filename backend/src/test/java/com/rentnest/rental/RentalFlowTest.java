@@ -66,7 +66,7 @@ class RentalFlowTest {
     @BeforeEach
     void evictHouseCache() {
         Set<String> keys = redisTemplate.keys(CacheConstant.KEY_PREFIX + "*");
-        if (keys != null && !keys.isEmpty()) {
+        if (!keys.isEmpty()) {
             redisTemplate.delete(keys);
         }
     }
