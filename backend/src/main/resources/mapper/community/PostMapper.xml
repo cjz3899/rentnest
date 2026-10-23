@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.community.mapper.PostMapper">
+    <sql id="postWhere">
+        <where>
+            <if test="userId != null">AND p.user_id = #{userId}</if>
+            <if test="status != null and status != ''">AND p.status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (p.title LIKE CONCAT('%', #{keyword}, '%')
+                OR p.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <!-- 列表只取内容摘要，全文在详情接口返回 -->
+    <select id="selectPage" parameterType="com.rentnest.community.dto.PostQuery"
+            resultType="com.rentnest.community.dto.PostResp">
+        SELECT p.id, p.user_id, p.title, LEFT(p.content, 300) AS content, p.status,
+        p.like_count, p.comment_count, p.created_at,
+        u.nickname AS user_nickname,
+        CONCAT('/api/files/', af.uuid) AS user_avatar_url,
+        EXISTS (SELECT 1 FROM post_like pl
+        WHERE pl.post_id = p.id AND pl.user_id = #{viewerId}) AS liked
+        FROM post p
+        LEFT JOIN users u ON u.id = p.user_id
+        LEFT JOIN file_record af ON af.id = u.avatar_file_id
+        <include refid="postWhere"/>
+        ORDER BY p.created_at DESC, p.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countByQuery" parameterType="com.rentnest.community.dto.PostQuery" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM post p
+        <include refid="postWhere"/>
+    </select>
+
+    <select id="selectDetailById" resultType="com.rentnest.community.dto.PostResp">
+        SELECT p.id, p.user_id, p.title, p.content, p.status,
+        p.like_count, p.comment_count, p.created_at,
+        u.nickname AS user_nickname,
+        CONCAT('/api/files/', af.uuid) AS user_avatar_url,
+        EXISTS (SELECT 1 FROM post_like pl
+        WHERE pl.post_id = p.id AND pl.user_id = #{viewerId}) AS liked
+        FROM post p
+        LEFT JOIN users u ON u.id = p.user_id
+        LEFT JOIN file_record af ON af.id = u.avatar_file_id
+        WHERE p.id = #{id}
+    </select>
+
+    <update id="increaseLikeCount">
+        UPDATE post SET like_count = like_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decreaseLikeCount">
+        UPDATE post SET like_count = GREATEST(like_count - 1, 0) WHERE id = #{id}
+    </update>
+
+    <update id="increaseCommentCount">
+        UPDATE post SET comment_count = comment_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="decreaseCommentCount">
+        UPDATE post SET comment_count = GREATEST(comment_count - 1, 0) WHERE id = #{id}
+    </update>
+</mapper>

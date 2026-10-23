@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rentnest.community.mapper.PostCommentMapper">
+    <sql id="commentColumns">
+        c.id, c.post_id, c.user_id, c.parent_id, c.content, c.status, c.created_at,
+        u.nickname AS user_nickname,
+        CONCAT('/api/files/', af.uuid) AS user_avatar_url
+    </sql>
+
+    <sql id="commentJoins">
+        LEFT JOIN users u ON u.id = c.user_id
+        LEFT JOIN file_record af ON af.id = u.avatar_file_id
+    </sql>
+
+    <!-- 一级评论分页，最新在前 -->
+    <select id="selectTopPage" parameterType="com.rentnest.community.dto.CommentQuery"
+            resultType="com.rentnest.community.dto.CommentResp">
+        SELECT
+        <include refid="commentColumns"/>
+        FROM post_comment c
+        <include refid="commentJoins"/>
+        WHERE c.post_id = #{postId} AND c.status = 'NORMAL' AND c.parent_id IS NULL
+        ORDER BY c.created_at DESC, c.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countTopByQuery" parameterType="com.rentnest.community.dto.CommentQuery"
+            resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM post_comment c
+        WHERE c.post_id = #{postId}
+          AND c.status = 'NORMAL'
+          AND c.parent_id IS NULL
+    </select>
+
+    <!-- 回复按时间正序挂到对应一级评论下 -->
+    <select id="selectRepliesByParentIds" resultType="com.rentnest.community.dto.CommentResp">
+        SELECT
+        <include refid="commentColumns"/>
+        FROM post_comment c
+        <include refid="commentJoins"/>
+        WHERE c.status = 'NORMAL' AND c.parent_id IN
+        <foreach collection="parentIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+        ORDER BY c.created_at ASC, c.id ASC
+    </select>
+
+    <sql id="adminWhere">
+        <where>
+            <if test="postId != null">AND c.post_id = #{postId}</if>
+            <if test="userId != null">AND c.user_id = #{userId}</if>
+            <if test="status != null and status != ''">AND c.status = #{status}</if>
+        </where>
+    </sql>
+
+    <select id="selectAdminPage" parameterType="com.rentnest.community.dto.CommentQuery"
+            resultType="com.rentnest.community.dto.CommentResp">
+        SELECT<include refid="commentColumns"/>, p.title AS post_title
+        FROM post_comment c
+        <include refid="commentJoins"/>
+        LEFT JOIN post p ON p.id = c.post_id
+        <include refid="adminWhere"/>
+        ORDER BY c.created_at DESC, c.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countAdminByQuery" parameterType="com.rentnest.community.dto.CommentQuery"
+            resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM post_comment c
+        <include refid="adminWhere"/>
+    </select>
+</mapper>
